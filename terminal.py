@@ -27,6 +27,8 @@ class PygameTerminal:
         self.history_index: int = -1
         self.clock: pygame.time.Clock = pygame.time.Clock()
         self.running: bool = True
+        self.commands = {}
+        self.command_abbreviations = {}
 
         # Command registry
         self.commands = {}
@@ -138,7 +140,6 @@ class PygameTerminal:
         """
         Process the entered command by splitting the input and calling the corresponding function.
         """
-        # Split the command into the command name and arguments
         parts = command.strip().split()
         if not parts:
             return
@@ -146,12 +147,32 @@ class PygameTerminal:
         command_name = parts[0].lower()  # Extract command name
         args = parts[1:]  # The rest are arguments
 
-        # Check if the command is registered
+        # Check for exact match first
         if command_name in self.commands:
-            # Call the registered command function and pass arguments
             self.commands[command_name](self, args)
         else:
-            self.terminal_lines.append(f"Unknown command: {command_name}")
+            # Check for abbreviation match
+            matches = [cmd for cmd in self.commands.keys() if cmd.startswith(command_name)]
+            if len(matches) == 1:
+                self.commands[matches[0]](self, args)
+            elif len(matches) > 1:
+                self.write(f"Ambiguous command '{command_name}'. Possible matches: {', '.join(matches)}")
+            else:
+                self.write(f"Unknown command: {command_name}")
+
+    def _update_abbreviations(self):
+        """
+        Update the command abbreviations dictionary.
+        """
+        self.command_abbreviations.clear()
+        for cmd in self.commands.keys():
+            for i in range(1, len(cmd) + 1):
+                prefix = cmd[:i]
+                if prefix not in self.command_abbreviations:
+                    self.command_abbreviations[prefix] = cmd
+                else:
+                    # If there's a conflict, set to None to indicate ambiguity
+                    self.command_abbreviations[prefix] = None
 
     def register_command(self, command_name: str, command_function: callable):
         """
@@ -161,6 +182,16 @@ class PygameTerminal:
         :param command_function: A callable function that will be executed when the command is entered
         """
         self.commands[command_name] = command_function
+        self._update_abbreviations()
+
+    def get_command_completions(self, partial_command):
+        """
+        Get possible command completions for a partial command.
+
+        :param partial_command: The partial command to complete
+        :return: A list of possible completions
+        """
+        return [cmd for cmd in self.commands.keys() if cmd.startswith(partial_command)]
 
     def write(self, text):
         """Write text to the terminal."""
