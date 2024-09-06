@@ -2,7 +2,7 @@ import pygame
 
 
 class PygameTerminal:
-    def __init__(self, width: int = 800, height: int = 600) -> None:
+    def __init__(self, width: int = 1024, height: int = 768) -> None:
         """
         Initialize the Pygame Terminal Emulator.
 
