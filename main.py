@@ -26,10 +26,6 @@ color = {
     "red" : (255, 0, 0),
     "green" : (0, 255, 0),
     "blue" : (0, 0, 255),
-    "yellow" : (255, 255, 0),
-    "cyan" : (0, 255, 255),
-    "magenta" : (255, 0, 255),
-    "gray64" : (64, 64, 64),
 }
 
 def does_color_exist(color_str: str):
@@ -200,22 +196,22 @@ def handle_command_help(args):
     else:
         write(f"Unknown command: {args[0]}")
 
-def handle_event(event):
-    if event.type == pygame.KEYDOWN:
-        if event.key == pygame.K_RETURN or event.key == pygame.K_KP_ENTER:
+def handle_event(event_param):
+    if event_param.type == pygame.KEYDOWN:
+        if event_param.key == pygame.K_RETURN or event_param.key == pygame.K_KP_ENTER:
             handle_return()
-        elif event.key == pygame.K_BACKSPACE or event.key == pygame.K_DELETE:
+        elif event_param.key == pygame.K_BACKSPACE or event_param.key == pygame.K_DELETE:
             handle_backspace()
-        elif event.key == pygame.K_LEFT:
+        elif event_param.key == pygame.K_LEFT:
             handle_left_arrow()
-        elif event.key == pygame.K_RIGHT:
+        elif event_param.key == pygame.K_RIGHT:
             handle_right_arrow()
-        elif event.key == pygame.K_UP:
+        elif event_param.key == pygame.K_UP:
             handle_up_arrow()
-        elif event.key == pygame.K_DOWN:
+        elif event_param.key == pygame.K_DOWN:
             handle_down_arrow()
-        elif event.unicode.isprintable():
-            handle_printable(event.unicode)
+        elif event_param.unicode.isprintable():
+            handle_printable(event_param.unicode)
 
 def main():
 
@@ -223,11 +219,11 @@ def main():
     running = True
 
     while running:
-        for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+        for EVENT in pygame.event.get():
+            if EVENT.type == pygame.QUIT:
                 running = False
             else:
-                handle_event(event)
+                handle_event(EVENT)
 
         draw_terminal()
         clock.tick(30)
