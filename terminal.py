@@ -32,6 +32,22 @@ class PygameTerminal:
 
         # Command registry
         self.commands = {}
+    def set_font_size(self, font_size: int) -> None:
+        """Set the font size."""
+        self.font = pygame.font.Font(None, font_size)
+
+    def set_font_name(self, font_name: str) -> None:
+        """Set the font name."""
+        self.font = pygame.font.Font(font_name, self.font.get_height())
+
+    def set_font(self, font_name: str, font_size: int) -> None:
+        """Set the font."""
+        self.font = pygame.font.Font(font_name, font_size)
+
+    def write_command_history(self, limit: int = -1) -> None:
+        """Write the command history to the terminal."""
+        for line in self.command_history[-limit:]:
+            self.terminal_lines.append(line)
 
     def run(self):
         """The main loop to run the terminal emulator."""
