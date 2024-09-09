@@ -1,3 +1,4 @@
+import pickle
 import random
 
 from terminal import PygameTerminal, Argument
@@ -6,14 +7,14 @@ from terminal import PygameTerminal, Argument
 class Character:
     def __init__(self, name, hp, attack, defense):
         self.name = name
-        self.hp = hp
-        self.max_hp = hp
-        self.attack = attack
-        self.defense = defense
-        self.exp = 0
-        self.exp_to_level = 100
-        self.level = 1
-        self.gold = 0
+        self.hp: float = hp
+        self.max_hp: float = hp
+        self.attack: float = attack
+        self.defense: float = defense
+        self.exp: float = 0
+        self.exp_to_level: float = 100
+        self.level: int = 1
+        self.gold: float = 0
 
     def level_up(self):
         self.level += 1
@@ -21,15 +22,20 @@ class Character:
         self.hp = self.max_hp
         self.attack += 2
         self.defense += 1
+        self.exp = 0
         self.exp_to_level *= 1.1
 
-    def attack(self, target: 'Enemy', term: PygameTerminal):
+    def attack_cmd(self, target: 'Enemy', term: PygameTerminal):
         damage = self.attack - target.defense
         if damage < 0:
             damage = 0
         target.hp -= damage
         term.write(f"You attack the {target.name} for {damage} damage.")
         term.write(f"The {target.name} has {target.hp} HP remaining.")
+
+    def get_stats(self):
+        return [self.level, self.max_hp, self.attack, self.defense]
+
 
 class Enemy:
     def __init__(self, name, hp, attack, defense, exp_reward, gold_reward):
@@ -40,13 +46,14 @@ class Enemy:
         self.exp_reward = exp_reward
         self.gold_reward = gold_reward
 
-    def attack(self, target: 'Character', term: PygameTerminal):
+    def attack_cmd(self, target: 'Character', term: PygameTerminal):
         damage = self.attack - target.defense
         if damage < 0:
             damage = 0
         target.hp -= damage
         term.write(f"The {self.name} attacks you for {damage} damage.")
         term.write(f"You have {target.hp} HP remaining.")
+
 
 class GameState:
     def __init__(self):
@@ -117,11 +124,17 @@ def fight(term: PygameTerminal):
         term.write(f"Attack: {enemy.attack} | Defense: {enemy.defense}")
         term.write("============================================")
 
-        player.attack(enemy, term)
+        player.attack_cmd(enemy, term)
         if enemy.hp > 0:
-            enemy.attack(player, term)
+            enemy.attack_cmd(player, term)
 
-        term.write("Type 'fight' to continue the battle or 'run' to try to escape.")
+        term.write(f"Your HP: {player.hp}/{player.max_hp} | {enemy.name}'s HP: {enemy.hp}")
+        if player.hp > 0 and enemy.hp > 0:
+            fight_or_run = term.prompt_user("Do you wish to (f)ight or (r)un?")
+            if fight_or_run == "r":
+                return
+            else:
+                term.write("You heroically continue fighting the monster!")
 
     if player.hp <= 0:
         term.write("============================================")
@@ -132,6 +145,18 @@ def fight(term: PygameTerminal):
         player.exp += enemy.exp_reward
         player.gold += enemy.gold_reward
         term.write(f"You gained {enemy.exp_reward} exp and {enemy.gold_reward} gold.")
+        if player.exp > player.exp_to_level:
+            old_stats: list[float] = player.get_stats()
+            player.level_up()
+            new_stats: list[float] = player.get_stats()
+            stats_difference: list[float] = [stat - old_stats[i] for i, stat in enumerate(new_stats)]
+            term.write(f"You have advanced to level {player.level}!")
+            term.write(
+                f"New stats ->  Max HP: {player.max_hp} (+{stats_difference[1]}) / Attack: {player.attack} (+{stats_difference[2]}) / Defense: {player.defense} ({+stats_difference[3]})")
+
+    term.write("Type 'explore' to continue your adventure or rest to recover some HP.")
+    return
+
 
 def run(term):
     if random.random() < 0.5:
@@ -141,11 +166,12 @@ def run(term):
         fight(term)
 
 
-def rest(term):
+def rest(rest_time: int, term: PygameTerminal):
     player = term.app_state.player
-    heal_amount = min(player.max_hp - player.hp, 20)
+    heal_amount = min(player.max_hp - player.hp, round(random.uniform(2, 5), 2) + int(rest_time))
     player.hp += heal_amount
-    term.write(f"You rest and recover {heal_amount} HP. Your current HP: {player.hp}/{player.max_hp}")
+    term.write(
+        f"You rest for {rest_time} hours and recover {heal_amount} HP. Your current HP: {player.hp}/{player.max_hp}")
     term.write("Type 'explore' to continue your adventure.")
 
 
@@ -163,10 +189,30 @@ def status(term):
     else:
         term.write("No character created yet. Use the 'create' command to start your adventure.")
 
+
 def help_command(term):
     term.write("Available commands:")
     for command_name in term.app_state.commands.keys():
         term.write(f"  {command_name}")
+
+
+def save_game(filename: str, term):
+    with open(f"{filename}.json", 'wb') as f:
+        try:
+            pickle.dump(term.app_state, f)
+            term.write(f"Game saved to {filename}.json")
+        except Exception as e:
+            term.write(f"Error saving game: {e}")
+
+
+def load_game(filename: str, term):
+    with open(f"{filename}.json", 'rb') as f:
+        try:
+            term.app_state = pickle.load(f)
+            term.write(f"Game loaded from {filename}.json")
+        except Exception as e:
+            term.write(f"Error loading game: {e}")
+
 
 def main():
     terminal = PygameTerminal(app_state=GameState(), width=1024, height=768, font_size=28)
@@ -179,9 +225,18 @@ def main():
     terminal.register_command(["explore", "ex"], explore)
     terminal.register_command(["fight", "fg"], fight)
     terminal.register_command(["run", "ru"], run)
-    terminal.register_command(["rest", "re"], rest)
+    terminal.register_command(
+        ["rest", "re"],
+        rest,
+        argument_list=[
+            Argument("rest_time", int, True)
+        ]
+    )
     terminal.register_command(["status", "st"], status)
     terminal.register_command(["help", "h"], help_command)
+
+    terminal.register_command(["save", "sv"], save_game, argument_list=[Argument("filename", str, True)])
+    terminal.register_command(["load", "ld"], load_game, argument_list=[Argument("filename", str, True)])
 
     terminal.write("Welcome to Terminal Dungeon Crawler!")
     terminal.write("Create your character using the 'create' command.")
