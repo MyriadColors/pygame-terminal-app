@@ -88,7 +88,7 @@ def guess(number, term):
     else:
         term.write("Too high! Try again.")
 
-terminal = PygameTerminal(app_state=GameState(), width=800, height=600)
+terminal = PygameTerminal(app_state=GameState(), width=800, height=800, font_size=24)
 terminal.register_command(
     ["guess"],
     guess,
