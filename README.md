@@ -1,116 +1,161 @@
 # Pygame Terminal Emulator
 
-A simple terminal emulator library built with Pygame, allowing you to create interactive terminal-like interfaces in your Pygame applications.
+## Overview
 
-## Description
+The Pygame Terminal Emulator is a versatile Python library that allows developers to create interactive command-line interface (CLI) applications and games using Pygame. This library provides a customizable terminal-like interface that can be easily integrated into various projects, offering features such as command history, custom commands, and dynamic visual updates.
 
-This library provides a basic terminal emulator that can be integrated into Pygame applications. It includes features such as:
+## Features
 
-- Command input and processing
+- Customizable terminal-like interface
 - Command history navigation
-- Customizable background and foreground colors
-- Ability to register custom commands
-- Basic text rendering and cursor display
-
-The package also includes an example application demonstrating the usage of the library.
-
-## Requirements
-
-- Python 3.6+
-- Pygame
+- Easy-to-use command registration system
+- Support for custom commands with arguments
+- Dynamic text updates and progress bars
+- Countdown functionality with custom messages
+- Customizable colors for background and text
 
 ## Installation
 
-First, ensure you have Python installed on your system. Then, install Pygame using pip:
-
-### Windows
+To use the Pygame Terminal Emulator, make sure you have Python and Pygame installed. You can install Pygame using pip:
 
 ```
 pip install pygame
 ```
 
-### macOS
+Then, include the `terminal.py` and `color_data.py` files in your project directory.
 
-```
-pip3 install pygame
-```
+## Usage
 
-### Linux (Debian-based, e.g., Ubuntu)
+### Basic Setup
 
-```
-sudo apt-get update
-sudo apt-get install python3-pygame
-```
-
-### Linux (Arch-based)
-
-```
-sudo pacman -S python-pygame
-```
-
-## Running the Example Application
-
-1. Clone this repository or download the source code.
-2. Navigate to the `examples/trivial_app` directory.
-3. Run the following command:
-
-```
-python main.py
-```
-
-On macOS or Linux, you might need to use `python3` instead of `python`.
-
-## Building Applications with the Library
-
-To use this library in your own Pygame application:
-
-1. Copy the `terminal.py` and `color_data.py` files into your project directory.
-
-2. Import the `PygameTerminal` class in your main script:
+To create a basic terminal interface:
 
 ```python
 from terminal import PygameTerminal
+
+# Initialize the terminal
+terminal = PygameTerminal(app_state=None, width=800, height=600, font_size=24)
+
+# Run the terminal
+terminal.run()
 ```
 
-3. Create an instance of `PygameTerminal`:
+### Registering Custom Commands
+
+You can easily add custom commands to your terminal:
 
 ```python
-terminal = PygameTerminal(width=800, height=600)
+from terminal import PygameTerminal, Argument
+
+def greet(name, term):
+    term.write(f"Hello, {name}!")
+
+terminal = PygameTerminal(app_state=None)
+terminal.register_command(
+    ["greet", "hello"],
+    greet,
+    [Argument("name", str, False)]
+)
+
+terminal.run()
 ```
 
-4. Register your custom commands:
+Now, users can use the `greet` or `hello` command followed by a name.
+
+### Creating a Simple Game
+
+Here's an example of how to create a simple number guessing game using the Pygame Terminal Emulator:
 
 ```python
-def my_command(term, args):
-    term.write(f"Custom command executed with args: {args}")
+import random
+from terminal import PygameTerminal, Argument
 
-terminal.register_command("mycommand", my_command)
+class GameState:
+    def __init__(self):
+        self.number = random.randint(1, 100)
+        self.attempts = 0
+
+def guess(number, term):
+    game_state = term.app_state
+    game_state.attempts += 1
+    
+    if int(number) == game_state.number:
+        term.write(f"Congratulations! You guessed the number in {game_state.attempts} attempts!")
+        game_state.number = random.randint(1, 100)
+        game_state.attempts = 0
+    elif int(number) < game_state.number:
+        term.write("Too low! Try again.")
+    else:
+        term.write("Too high! Try again.")
+
+terminal = PygameTerminal(app_state=GameState(), width=800, height=600)
+terminal.register_command(
+    ["guess"],
+    guess,
+    [Argument("number", int, False)]
+)
+
+terminal.write("Welcome to the Number Guessing Game!")
+terminal.write("I'm thinking of a number between 1 and 100.")
+terminal.write("Use the 'guess' command followed by a number to make a guess.")
+
+terminal.run()
 ```
 
-5. Run the terminal in your game loop:
+### Using Progress Bars and Countdowns
+
+The Pygame Terminal Emulator supports progress bars and countdowns for more dynamic interactions:
 
 ```python
-def main():
-    terminal = PygameTerminal()
-    # Register commands here
-    terminal.run()
+import time
+from terminal import PygameTerminal
 
-if __name__ == "__main__":
-    main()
+terminal = PygameTerminal(app_state=None)
+
+def simulate_process(term):
+    total_steps = 50
+    for i in range(total_steps + 1):
+        term.progress_bar(total_steps, i)
+        time.sleep(0.1)
+    term.write("Process completed!")
+
+def start_countdown(term):
+    term.countdown_with_message(
+        10, 0, 1,
+        "Countdown: {} seconds remaining",
+        1,
+        lambda: term.write("Countdown finished!")
+    )
+
+terminal.register_command(["process"], simulate_process)
+terminal.register_command(["countdown"], start_countdown)
+
+terminal.run()
 ```
 
-## Customizing the Terminal
+## Customization
 
-You can customize various aspects of the terminal:
+You can customize various aspects of the terminal, such as colors, font size, and dimensions:
 
-- Change colors using the `color` command in the terminal or by modifying the `bg_color` and `fg_color` attributes of the `PygameTerminal` instance.
-- Adjust font size and type by modifying the `font` attribute in the `PygameTerminal` class.
-- Add new commands by using the `register_command` method.
+```python
+terminal = PygameTerminal(
+    app_state=None,
+    width=1024,
+    height=768,
+    font_size=32,
+    initial_message="Welcome to my custom terminal!"
+)
+
+terminal.bg_color = (30, 30, 30)  # Dark gray background
+terminal.fg_color = (0, 255, 0)   # Green text
+
+terminal.run()
+```
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions to the Pygame Terminal Emulator are welcome! Please feel free to submit pull requests, report bugs, or suggest new features.
 
 ## License
 
-This project is open source and available under the [MIT License](LICENSE).
+This project is open source and available under the MIT License.
