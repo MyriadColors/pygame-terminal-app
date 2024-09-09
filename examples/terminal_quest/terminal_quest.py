@@ -215,7 +215,7 @@ def load_game(filename: str, term):
 
 
 def main():
-    terminal = PygameTerminal(app_state=GameState(), width=1024, height=768, font_size=28)
+    terminal = PygameTerminal(app_state=GameState(), width=1024, height=1024, font_size=20)
 
     terminal.register_command(
         ["create"],
